@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Проєктування бази даних — тренажер</title>
+<style>
+:root{--bg:#eef3f1;--ink:#0f2d2a;--pri:#0b6e5f;--acc:#f2b134;--bad:#b3261e;--ok:#1b7f3b;--card:#fff;--line:#c9d8d3;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;line-height:1.2;margin:0 0 .5em}
+main{max-width:760px;margin:0 auto;padding:16px 16px 48px}
+.card{background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:20px;margin-bottom:16px}
+label{display:block;font-weight:600;margin:12px 0 6px}
+input,select{width:100%;min-height:52px;font:inherit;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink)}
+button{min-height:54px;font:inherit;font-weight:700;border:2px solid var(--ink);border-radius:12px;padding:10px 22px;background:var(--pri);color:#fff;cursor:pointer;width:100%;margin-top:14px}
+button.alt{background:#fff;color:var(--ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.err{color:var(--bad);font-weight:600;min-height:1.5em;margin-top:10px}
+.small{font-size:14px;color:#41615b}
+#top{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+#timer{font-variant-numeric:tabular-nums;font-weight:700;color:var(--acc);font-size:20px}
+#bar{display:flex;gap:4px;margin-bottom:14px}
+#bar i{flex:1;height:8px;border-radius:4px;background:var(--line)}
+#bar i.on{background:var(--pri)}#bar i.cur{background:var(--acc)}
+.lv{display:inline-block;padding:3px 12px;border-radius:99px;background:var(--acc);color:var(--ink);font-weight:700;font-size:14px}
+.row{padding:12px 0;border-top:1px solid var(--line)}
+.row p{margin:0 0 8px;font-weight:600}
+.row select+select{margin-top:8px}
+.row.good{border-left:6px solid var(--ok);padding-left:10px}
+.row.bad{border-left:6px solid var(--bad);padding-left:10px}
+.fb{margin-top:14px;padding:12px 14px;border-radius:10px;font-weight:600}
+.fb.good{background:#dff3e5;color:#14532d}.fb.bad{background:#fbe4e2;color:#7a1a14}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.tabs button{width:auto;margin:0;min-height:46px;background:#fff;color:var(--ink)}
+.tabs button.on{background:var(--ink);color:#fff}
+.ents{display:flex;gap:12px;flex-wrap:wrap}
+.ent{flex:1 1 160px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff}
+.ent b{display:block;background:var(--ink);color:#fff;padding:6px 10px;text-align:center}
+.ent div{padding:5px 10px;border-top:1px solid var(--line);font-size:15px}
+.ent div.k{font-weight:700;background:#fff4d6}
+.rel{margin:6px 0;padding:8px 12px;border-left:5px solid var(--pri);background:#e6f2ef;border-radius:0 8px 8px 0}
+.big{font-size:56px;font-family:Georgia,serif;font-weight:700;line-height:1}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}dt{color:#41615b}dd{margin:0;font-weight:600;word-break:break-all}
+.code{font:700 26px ui-monospace,Menlo,Consolas,monospace;letter-spacing:2px;background:#fff4d6;border:2px dashed var(--ink);border-radius:10px;padding:10px;text-align:center;margin-top:14px}
+@media(min-width:600px){button{width:auto}.full button{width:100%}}
+</style>
+</head>
+<body>
+<div id="top" hidden><span id="prog"></span><span id="timer">00:00</span></div>
+<main>
+
+<section id="s-login" class="card">
+  <h1>Проєктування бази даних</h1>
+  <p>Тренажер для закріплення теми: 10 завдань, максимум 100 балів. Залік іде за першою спробою, час вмикається після входу.</p>
+  <label for="em">Корпоративна пошта</label>
+  <input id="em" type="email" inputmode="email" autocomplete="off" placeholder="логін@onvk13.net">
+  <div id="clw"><label for="cl">Клас</label>
+  <select id="cl"><option value="">— оберіть клас —</option><option>10-Г</option><option>10-І</option><option>10-Н</option></select></div>
+  <button id="go">Почати</button>
+  <div class="err" id="e1" role="alert"></div>
+  <p class="small">Збираємо лише пошту, клас, час і результати завдань. Їх бачить лише вчителька. Не закривайте вкладку під час роботи: прогрес не зберігається.</p>
+</section>
+
+<section id="s-intro" class="card" hidden>
+  <h2>Приклад: як виглядає модель «сутність-зв’язок»</h2>
+  <p>Оберіть предметну область і роздивіться її сутності, атрибути й зв’язки. Зірочка й підсвічування позначають ключ, який однозначно визначає об’єкт.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="ents" id="ents"></div>
+  <h3 style="margin-top:16px">Зв’язки</h3>
+  <div id="rels"></div>
+  <button id="start">До завдань</button>
+</section>
+
+<section id="s-task" hidden>
+  <div id="bar"></div>
+  <div class="card" id="tc"></div>
+</section>
+
+<section id="s-end" class="card" hidden>
+  <h2>Роботу завершено</h2>
+  <div class="big" id="sc"></div>
+  <p id="gr" style="font-weight:700"></p>
+  <p id="rf"></p>
+  <dl id="info"></dl>
+  <div class="code" id="code"></div>
+  <p class="small" id="sync"></p>
+  <p>Зробіть скріншот цього екрана й надішліть учительці. Повторний вхід не змінить зарахований результат.</p>
+</section>
+</main>
+
+<script>
+// Вставте сюди адресу веб-застосунку Google Apps Script (див. інструкцію). Якщо порожньо, працює пробний режим без сервера.
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycby0SYGyLSO45zomtB_dmPlvHriHK3lxZIBqK0UThFjz4LgvAjo2ctpBc4pqvew3CHAx/exec';
+const ADMIN='popkova@onvk13.net',DOM='@onvk13.net';
+const $=s=>document.querySelector(s);
+const show=id=>{document.querySelectorAll('main>section').forEach(x=>x.hidden=x.id!==id);scrollTo(0,0)};
+
+const R=(t,o,a)=>({t,s:[o],a:[a]});
+const T=[
+{lv:'Початковий',p:8,topic:'поняття БД і СКБД',q:'Оберіть правильні означення.',h:'Пригадайте означення з теми «Поняття бази даних і СКБД».',rows:[
+ R('База даних — це…',['структурована сукупність даних, які відображують стан об’єктів предметної області та зв’язки між ними','програма для створення таблиць і діаграм','набір файлів на жорсткому диску'],0),
+ R('Система керування базами даних — це…',['людина, яка вводить дані у таблиці','програма, що забезпечує створення БД та виконання операцій з даними','перелік об’єктів предметної області'],1)]},
+{lv:'Початковий',p:8,topic:'ролі користувачів БД',q:'Хто виконує яку роль у роботі з базою даних?',h:'Згадайте порівняння з будівництвом будинку.',rows:[
+ R('Створює схему даних, визначає особливості предметної області',['Розробник','Адміністратор','Оператор','Користувач'],0),
+ R('Визначає обмеження цілісності та права доступу',['Розробник','Адміністратор','Оператор','Користувач'],1),
+ R('Вводить дані в базу',['Розробник','Адміністратор','Оператор','Користувач'],2),
+ R('Оперує даними для розв’язання задач',['Розробник','Адміністратор','Оператор','Користувач'],3)]},
+{lv:'Початковий',p:8,topic:'сутності, атрибути, екземпляри',q:'Що це: сутність, атрибут чи екземпляр сутності?',h:'Сутність — множина однотипних об’єктів, атрибут — їхня властивість, екземпляр — конкретний об’єкт.',rows:[
+ R('Учитель',['Сутність','Атрибут','Екземпляр'],0),
+ R('рік народження',['Сутність','Атрибут','Екземпляр'],1),
+ R('Зарічний Анатолій Миколайович, 1974, математик',['Сутність','Атрибут','Екземпляр'],2),
+ R('Книга',['Сутність','Атрибут','Екземпляр'],0),
+ R('видавництво',['Сутність','Атрибут','Екземпляр'],1)]},
+{lv:'Початковий',p:8,topic:'моделі даних',q:'Яку модель даних описано?',h:'Повторіть чотири моделі: ієрархічна, мережева, реляційна, об’єктно-орієнтована.',rows:[
+ R('Чітке підпорядкування елементів даних',['Ієрархічна','Мережева','Реляційна','Об’єктно-орієнтована'],0),
+ R('Крім вертикальних існують і горизонтальні зв’язки',['Ієрархічна','Мережева','Реляційна','Об’єктно-орієнтована'],1),
+ R('Об’єкти подано таблицями, принципи сформулював Е. Кодд',['Ієрархічна','Мережева','Реляційна','Об’єктно-орієнтована'],2),
+ R('Дані моделюються як об’єкти, їх атрибути та класи',['Ієрархічна','Мережева','Реляційна','Об’єктно-орієнтована'],3)]},
+{lv:'Середній',p:10,topic:'ключові атрибути',q:'Оберіть атрибут, який найкраще підходить як ключ сутності.',h:'Ключ має бути унікальним: його значення не повторюється в різних об’єктів.',rows:[
+ R('Учитель',['прізвище','паспорт','предмет','стать'],1),
+ R('Учень',['прізвище','ім’я','код','дата народження'],2),
+ R('Клас',['кількість учнів','назва','класний кабінет'],1),
+ R('Поштове відділення',['назва вулиці','місто','індекс'],2)]},
+{lv:'Середній',p:10,topic:'типи зв’язків',q:'Визначте тип зв’язку між сутностями.',h:'Запитайте себе в обидва боки: скільки об’єктів другої сутності може відповідати одному об’єкту першої, і навпаки.',rows:[
+ R('Держава — Столиця',['1:1','1:∞','∞:∞'],0),
+ R('Клас — Учень',['1:1','1:∞','∞:∞'],1),
+ R('Лікар — Пацієнт',['1:1','1:∞','∞:∞'],2),
+ R('Літак — Рейс',['1:1','1:∞','∞:∞'],1),
+ R('Актор — Фільм',['1:1','1:∞','∞:∞'],2)]},
+{lv:'Достатній',p:14,topic:'зв’язки та їх позначення',q:'Підпишіть зв’язки на схемі: оберіть дієслово та множинність.',h:'Дієслово має відображати зміст зв’язку, а множинність залежить від кількості об’єктів з кожного боку.',rows:[
+ {t:'Учитель — Клас (класний керівник)',s:[['керує','навчає','вчиться','знімається'],['1:1','1:∞','∞:∞']],a:[0,0]},
+ {t:'Учитель — Клас (викладає предмет)',s:[['керує','навчає','вчиться','знімається'],['1:1','1:∞','∞:∞']],a:[1,2]},
+ {t:'Клас — Учень',s:[['керує','навчає','вчиться','знімається'],['1:1','1:∞','∞:∞']],a:[2,1]},
+ {t:'Актор — Фільм',s:[['керує','навчає','вчиться','знімається'],['1:1','1:∞','∞:∞']],a:[3,2]}]},
+{lv:'Достатній',p:14,topic:'зайві зв’язки та цілісність',q:'На схемі «Школа» є сутності Учитель, Клас, Учень і зв’язки нижче. Один із них зайвий.',h:'Зайвим є зв’язок, який вже випливає з інших зв’язків схеми.',rows:[
+ R('Який зв’язок зайвий?',['Учитель керує Класом','Учитель навчає Клас','Клас: вчиться Учень','Учитель навчає Учня'],3),
+ R('Чому його не слід наносити на схему?',['Бо в ньому немає дієслова','Бо він дублює дані й може порушити цілісність (суперечність у даних)','Бо вчитель не може мати зв’язків з учнями'],1)]},
+{lv:'Високий',p:10,topic:'розподіл атрибутів між сутностями',q:'Відеопрокат. До якої сутності належить кожен атрибут?',h:'Подумайте, про що саме зберігається ця властивість і коли вона змінюється.',rows:[
+ ...[['біографія',0],['фото',0],['режисер',1],['тривалість',1],['країна',1],['адреса проживання',2],['телефон',2],['дата повернення',3]].map(([n,a])=>R(n,['Актор','Фільм','Клієнт','Прокат (факт видачі)'],a))]},
+{lv:'Високий',p:10,topic:'побудова моделі «сутність-зв’язок»',q:'Відеопрокат. Визначте зв’язки між сутностями або вкажіть, що зв’язок зайвий.',h:'Враховуйте, що фільм представлено кількома екземплярами, а фільм може мати кілька жанрів. Зайві зв’язки не наносяться.',rows:(o=>[
+ R('Актор — Фільм (через ролі)',o,2),R('Фільм — Екземпляр фільму',o,1),R('Клієнт — Екземпляр фільму (через прокат)',o,2),R('Фільм — Жанр',o,2),R('Клієнт — Актор',o,3)])(['1:1','1:∞','∞:∞','Зв’язок зайвий'])}
+];
+
+const D={
+ 'Школа':{e:{'Учитель':['*паспорт','прізвище','ім’я','по батькові','стать','предмет'],'Клас':['*назва'],'Учень':['*код','прізвище','ім’я','дата народження','стать']},r:['Учитель керує Класом — 1:1','Учитель навчає Клас — ∞:∞','Клас: вчиться Учень — 1:∞']},
+ 'Бібліотека':{e:{'Книга':['*інвентарний номер','назва','автор','видавництво','рік видання'],'Читач':['*номер квитка','прізвище','ім’я','телефон']},r:['Читач бере Книгу — ∞:∞ (дата видачі й повернення)']},
+ 'Лікарня':{e:{'Лікар':['*код лікаря','прізвище','спеціальність'],'Пацієнт':['*номер картки','прізвище','дата народження','група крові'],'Діагноз':['*код діагнозу','назва']},r:['Лікар лікує Пацієнта — ∞:∞','Пацієнтові встановлено Діагноз — ∞:∞']}
+};
+
+let S={email:'',cls:'',id:'',t0:0,i:0,score:0,pts:[],tm:null,locked:false};
+const demo=d=>d.action==='start'?{ok:true,id:'demo'}:{ok:true,code:[...(d.email+d.score+d.dur)].reduce((h,c)=>(h*31+c.charCodeAt(0))>>>0,7).toString(16).toUpperCase().slice(0,6)};
+const api=d=>SCRIPT_URL?fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(d)}).then(r=>r.json()):Promise.resolve(demo(d));
+const shuf=n=>[...Array(n).keys()].sort(()=>Math.random()-.5);
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+
+$('#em').oninput=()=>{$('#clw').hidden=$('#em').value.trim().toLowerCase()===ADMIN};
+$('#go').onclick=async()=>{
+ const em=$('#em').value.trim().toLowerCase(),cl=$('#cl').value,adm=em===ADMIN,e=$('#e1');e.textContent='';
+ if(!em.endsWith(DOM)||em.length<=DOM.length+0){e.textContent='Введіть корпоративну пошту у форматі логін'+DOM;return}
+ if(!adm&&!cl){e.textContent='Оберіть свій клас.';return}
+ $('#go').disabled=true;
+ try{const r=await api({action:'start',email:em,cls:adm?'':cl});
+  if(!r.ok){e.textContent=r.msg||'Цієї пошти немає у списку. Зверніться до вчительки.';$('#go').disabled=false;return}
+  S.email=em;S.cls=adm?'—':cl;S.id=r.id;S.t0=Date.now();
+  $('#top').hidden=false;S.tm=setInterval(()=>$('#timer').textContent=fmt(Math.floor((Date.now()-S.t0)/1000)),1000);
+  window.onbeforeunload=ev=>{ev.preventDefault();ev.returnValue=''};
+  intro();
+ }catch(x){e.textContent='Немає зв’язку із сервером. Перевірте інтернет і спробуйте ще раз.';$('#go').disabled=false}
+};
+
+function intro(){
+ show('s-intro');$('#prog').textContent='Приклад';
+ const names=Object.keys(D);
+ $('#tabs').innerHTML=names.map((n,i)=>`<button class="alt" data-n="${n}">${n}</button>`).join('');
+ const draw=n=>{const d=D[n];
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.n===n));
+  $('#ents').innerHTML=Object.entries(d.e).map(([k,v])=>`<div class="ent"><b>${k}</b>${v.map(a=>a[0]==='*'?`<div class="k">★ ${a.slice(1)}</div>`:`<div>${a}</div>`).join('')}</div>`).join('');
+  $('#rels').innerHTML=d.r.map(x=>`<div class="rel">${x}</div>`).join('')};
+ $('#tabs').onclick=e=>{if(e.target.dataset.n)draw(e.target.dataset.n)};
+ draw(names[0]);
+ $('#start').onclick=()=>{S.i=0;task()};
+}
+
+function task(){
+ show('s-task');S.locked=false;
+ const t=T[S.i];
+ $('#prog').textContent=`Завдання ${S.i+1} з ${T.length}`;
+ $('#bar').innerHTML=T.map((_,i)=>`<i class="${i<S.i?'on':i===S.i?'cur':''}"></i>`).join('');
+ $('#tc').innerHTML=`<span class="lv">${t.lv} · ${t.p} б.</span><h2 style="margin-top:12px">${t.q}</h2>`+
+  t.rows.map((r,k)=>`<div class="row" id="r${k}"><p>${r.t}</p>${r.s.map((o,j)=>`<select data-r="${k}" data-j="${j}" aria-label="${r.t}"><option value="-1">— оберіть —</option>${shuf(o.length).map(x=>`<option value="${x}">${o[x]}</option>`).join('')}</select>`).join('')}</div>`).join('')+
+  `<div id="fb"></div><button id="chk">Перевірити</button>`;
+ $('#chk').onclick=check;
+}
+
+function check(){
+ const t=T[S.i];
+ const sels=[...document.querySelectorAll('#tc select')];
+ if(sels.some(s=>+s.value<0)){$('#fb').innerHTML='<div class="fb bad">Заповніть усі поля. Перевірка можлива лише один раз.</div>';return}
+ let ok=0;
+ t.rows.forEach((r,k)=>{
+  const g=r.a.every((a,j)=>+document.querySelector(`[data-r="${k}"][data-j="${j}"]`).value===a);
+  if(g)ok++;$('#r'+k).classList.add(g?'good':'bad');
+  $('#r'+k).querySelectorAll('select').forEach(s=>s.disabled=true);
+  $('#r'+k).querySelector('p').textContent=(g?'✓ ':'✗ ')+r.t;
+ });
+ const n=t.rows.length,pts=Math.round(t.p*ok/n);S.pts.push(pts);S.score+=pts;
+ $('#fb').innerHTML=ok===n?`<div class="fb good">Правильно! +${pts} б.</div>`:`<div class="fb bad">Правильних відповідей: ${ok} з ${n}. Отримано ${pts} з ${t.p} б. ${t.h}</div>`;
+ const b=$('#chk');b.disabled=false;b.textContent=S.i<T.length-1?'Далі':'Завершити роботу';
+ b.onclick=()=>{if(S.i<T.length-1){S.i++;task()}else finish()};
+}
+
+async function finish(){
+ clearInterval(S.tm);window.onbeforeunload=null;
+ const dur=Math.round((Date.now()-S.t0)/1000),sc=S.score;
+ $('#top').hidden=true;show('s-end');
+ const g=sc?Math.max(1,Math.round(sc*.12)):0;
+ $('#sc').textContent=sc+' / 100';
+ $('#gr').textContent=`Оцінка за 12-бальною шкалою: ${g}`;
+ const weak=T.filter((t,i)=>S.pts[i]<t.p).map(t=>t.topic);
+ const msg=sc>=90?'Блискуче! Ви впевнено володієте темою проєктування баз даних.':sc>=70?'Добрий результат: основи засвоєно, залишилось відшліфувати деталі.':sc>=45?'Базові поняття вже є, але частину тем потрібно опрацювати ще раз.':'Тема потребує повторення. Перечитайте конспект і спробуйте виконати схеми самостійно.';
+ $('#rf').textContent=msg+(weak.length?' Варто повторити: '+weak.join('; ')+'.':'');
+ const fin=new Date().toLocaleString('uk-UA');
+ const dl=[['Пошта',S.email],['Клас',S.cls],['Завершено',fin],['Час виконання',fmt(dur)]];
+ $('#info').innerHTML=dl.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join('');
+ const send=async()=>{try{const r=await api({action:'finish',id:S.id,email:S.email,score:sc,dur,res:S.pts.join(',')});
+  $('#code').textContent='Код: '+r.code;$('#sync').textContent=SCRIPT_URL?'Результат надіслано вчительці.':'Пробний режим: результат не надсилається.'}
+  catch(x){$('#code').textContent='Код: —';$('#sync').innerHTML='Не вдалося надіслати результат. <button id="rt" class="alt">Спробувати ще раз</button>';$('#rt').onclick=send}};
+ send();
+}
+</script>
+</body>
+</html>
